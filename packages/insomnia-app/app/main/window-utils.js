@@ -133,15 +133,11 @@ export function createWindow() {
           misc.clickLink(`${CHANGELOG_BASE_URL}/${getAppVersion()}/`);
         },
       },
-      ...(isMac()
-        ? [
-            { type: 'separator' },
-            { role: 'hide' },
-            { role: 'hideothers' },
-            { type: 'separator' },
-            { label: `${MNEMONIC_SYM}Quit`, accelerator: 'CmdOrCtrl+Q', click: () => app.quit() },
-          ]
-        : []),
+      { type: 'separator' },
+      { role: 'hide' },
+      { role: 'hideothers' },
+      { type: 'separator' },
+      { label: `${MNEMONIC_SYM}Quit`, accelerator: 'CmdOrCtrl+Q', click: () => app.quit() },
     ],
   };
 
@@ -211,7 +207,6 @@ export function createWindow() {
       },
       {
         label: 'Toggle Sidebar',
-        accelerator: 'CmdOrCtrl+\\',
         click: () => {
           const w = BrowserWindow.getFocusedWindow();
           if (!w || !w.webContents) {
@@ -263,6 +258,19 @@ export function createWindow() {
         click: (menuItem, w, e) => {
           const directory = misc.getDataDirectory();
           shell.showItemInFolder(directory);
+        },
+      },
+      {
+        label: 'Show Open Source Licenses',
+        click: (menuItem, w, e) => {
+          const licensePath = path.resolve(app.getAppPath(), '../opensource-licenses.txt');
+          shell.openItem(licensePath);
+        },
+      },
+      {
+        label: 'Show Software License',
+        click: () => {
+          shell.openExternal('https://insomnia.rest/license');
         },
       },
       {

@@ -79,6 +79,11 @@ export function getContentTypeHeader<T: Header>(headers: Array<T>): T | null {
   return matches.length ? matches[0] : null;
 }
 
+export function getMethodOverrideHeader<T: Header>(headers: Array<T>): T | null {
+  const matches = filterHeaders(headers, 'x-http-method-override');
+  return matches.length ? matches[0] : null;
+}
+
 export function getHostHeader<T: Header>(headers: Array<T>): T | null {
   const matches = filterHeaders(headers, 'host');
   return matches.length ? matches[0] : null;
@@ -118,7 +123,7 @@ export function removeVowels(str: string): string {
 }
 
 export function formatMethodName(method: string): string {
-  let methodName = method;
+  let methodName = method || '';
   if (method === METHOD_DELETE || method === METHOD_OPTIONS) {
     methodName = method.slice(0, 3);
   } else if (method.length > 4) {

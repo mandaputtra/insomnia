@@ -1,13 +1,13 @@
 # Insomnia REST Client
 
-[![Travis](https://api.travis-ci.org/getinsomnia/insomnia.svg)](https://travis-ci.org/getinsomnia/insomnia)
+[![Travis](https://api.travis-ci.org/Kong/insomnia.svg)](https://travis-ci.org/Kong/insomnia)
 [![Slack Channel](https://chat.insomnia.rest/badge.svg)](https://chat.insomnia.rest/)
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/getinsomnia/insomnia/master/LICENSE)
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/Kong/insomnia/blob/master/LICENSE)
 [![CodeFund](https://img.shields.io/badge/codefund-advertiser-success.svg)](https://codefund.io)
 
 Insomnia is a cross-platform _REST client_, built on top of [Electron](http://electron.atom.io/).
 
-![Insomnia REST Client Screenshot](https://raw.githubusercontent.com/getinsomnia/insomnia/master/screenshots/main.png)
+![Insomnia REST Client Screenshot](https://raw.githubusercontent.com/Kong/insomnia/master/screenshots/main.png)
 
 ## Download
 
@@ -36,7 +36,7 @@ common text editors. Read more and download plugins at [editorconfig.org](http:/
 ## Developing
 
 Development on Insomnia can be done on Mac, Windows, or Linux as long as you have
-[NodeJS 8](https://nodejs.org) and [Git](https://git-scm.com/).
+[NodeJS](https://nodejs.org) and [Git](https://git-scm.com/). See the `.nvmrc` file located in the project for the correct Node version.
 
 <details>
 <summary>Initial Dev Setup</summary>
@@ -84,6 +84,7 @@ the following tools:
 
 Here is a list of plugins available for installation via NPM.
 
+- [AWS IAM](https://www.npmjs.com/package/insomnia-plugin-aws-iam) – Template tag to retrieve system AWS credentials
 - [Chance](https://www.npmjs.com/package/insomnia-plugin-chance) – Generates a random value using Chance.JS
 - [Cuid](https://www.npmjs.com/package/insomnia-plugin-cuid) – Generate random cuids
 - [Custom Timestamp](https://www.npmjs.com/package/insomnia-plugin-customtimestamp) – Advanced timestamp creator

@@ -91,9 +91,8 @@ class App extends PureComponent {
       vcs: null,
       forceRefreshCounter: 0,
       forceRefreshHeaderCounter: 0,
+      isMigratingChildren: false,
     };
-
-    this._isMigratingChildren = false;
 
     this._getRenderContextPromiseCache = {};
 
@@ -253,6 +252,12 @@ class App extends PureComponent {
           await this._updateIsVariableUncovered();
         },
       ],
+      [
+        hotKeyRefs.SIDEBAR_TOGGLE,
+        () => {
+          this._handleToggleSidebar();
+        },
+      ],
     ];
   }
 
@@ -306,29 +311,48 @@ class App extends PureComponent {
   }
 
   static async _requestGroupDuplicate(requestGroup) {
-    models.requestGroup.duplicate(requestGroup);
+    showPrompt({
+      title: 'Duplicate Folder',
+      defaultValue: requestGroup.name,
+      submitName: 'Create',
+      label: 'New Name',
+      selectText: true,
+      onComplete: async name => {
+        await models.requestGroup.duplicate(requestGroup, { name });
+      },
+    });
   }
 
   static async _requestGroupMove(requestGroup) {
     showModal(MoveRequestGroupModal, { requestGroup });
   }
 
-  async _requestDuplicate(request) {
+  _requestDuplicate(request) {
     if (!request) {
       return;
     }
 
-    const newRequest = await models.request.duplicate(request);
-    await this._handleSetActiveRequest(newRequest._id);
+    showPrompt({
+      title: 'Duplicate Request',
+      defaultValue: request.name,
+      submitName: 'Create',
+      label: 'New Name',
+      selectText: true,
+      onComplete: async name => {
+        const newRequest = await models.request.duplicate(request, { name });
+        await this._handleSetActiveRequest(newRequest._id);
+      },
+    });
   }
 
-  async _workspaceDuplicate(callback) {
+  _workspaceDuplicate(callback) {
     const workspace = this.props.activeWorkspace;
     showPrompt({
       title: 'Duplicate Workspace',
-      defaultValue: `${workspace.name} (Copy)`,
-      submitName: 'Duplicate',
+      defaultValue: workspace.name,
+      submitName: 'Create',
       selectText: true,
+      label: 'New Name',
       onComplete: async name => {
         const newWorkspace = await db.duplicate(workspace, { name });
         await this.props.handleSetActiveWorkspace(newWorkspace._id);
@@ -448,7 +472,9 @@ class App extends PureComponent {
     await this._updateActiveWorkspaceMeta({ activeEnvironmentId });
 
     // Give it time to update and re-render
-    setTimeout(() => this._wrapper._forceRequestPaneRefresh(), 300);
+    setTimeout(() => {
+      this._wrapper && this._wrapper._forceRequestPaneRefresh();
+    }, 300);
   }
 
   _handleSetSidebarWidth(sidebarWidth) {
@@ -683,6 +709,7 @@ class App extends PureComponent {
   }
 
   async _handleSetActiveResponse(requestId, activeResponse = null) {
+    const { activeEnvironment } = this.props;
     const activeResponseId = activeResponse ? activeResponse._id : null;
     await App._updateRequestMetaByParentId(requestId, { activeResponseId });
 
@@ -690,7 +717,8 @@ class App extends PureComponent {
     if (activeResponseId) {
       response = await models.response.getById(activeResponseId);
     } else {
-      response = await models.response.getLatestForRequest(requestId);
+      const environmentId = activeEnvironment ? activeEnvironment._id : null;
+      response = await models.response.getLatestForRequest(requestId, environmentId);
     }
 
     const requestVersionId = response ? response.requestVersionId : 'n/a';
@@ -839,7 +867,7 @@ class App extends PureComponent {
 
   async _handleReloadPlugins() {
     const { settings } = this.props;
-    await plugins.getPlugins(true);
+    await plugins.reloadPlugins();
     templating.reload();
     themes.setTheme(settings.theme);
     console.log('[plugins] reloaded');
@@ -940,7 +968,9 @@ class App extends PureComponent {
       }
 
       if (needsRefresh) {
-        setTimeout(() => this._wrapper._forceRequestPaneRefresh(), 300);
+        setTimeout(() => {
+          this._wrapper && this._wrapper._forceRequestPaneRefresh();
+        }, 300);
       }
     });
 
@@ -1021,7 +1051,7 @@ class App extends PureComponent {
     document.removeEventListener('mousemove', this._handleMouseMove);
   }
 
-  async _ensureWorkspaceChildren(props) {
+  _ensureWorkspaceChildren(props) {
     const { activeWorkspace, activeCookieJar, environments } = props;
     const baseEnvironments = environments.filter(e => e.parentId === activeWorkspace._id);
 
@@ -1031,22 +1061,23 @@ class App extends PureComponent {
     }
 
     // We already started migrating. Let it finish.
-    if (this._isMigratingChildren) {
+    if (this.state.isMigratingChildren) {
       return;
     }
 
     // Prevent rendering of everything
-    this._isMigratingChildren = true;
+    this.setState({ isMigratingChildren: true }, async () => {
+      const flushId = await db.bufferChanges();
+      await models.environment.getOrCreateForWorkspace(activeWorkspace);
+      await models.cookieJar.getOrCreateForParentId(activeWorkspace._id);
+      await db.flushChanges(flushId);
 
-    const flushId = await db.bufferChanges();
-    await models.environment.getOrCreateForWorkspace(activeWorkspace);
-    await models.cookieJar.getOrCreateForParentId(activeWorkspace._id);
-    await db.flushChanges(flushId);
-
-    this._isMigratingChildren = false;
+      this.setState({ isMigratingChildren: false });
+    });
   }
 
-  componentWillReceiveProps(nextProps) {
+  // eslint-disable-next-line camelcase
+  UNSAFE_componentWillReceiveProps(nextProps) {
     this._ensureWorkspaceChildren(nextProps);
 
     // Update VCS if needed
@@ -1056,12 +1087,13 @@ class App extends PureComponent {
     }
   }
 
-  componentWillMount() {
+  // eslint-disable-next-line camelcase
+  UNSAFE_componentWillMount() {
     this._ensureWorkspaceChildren(this.props);
   }
 
   render() {
-    if (this._isMigratingChildren) {
+    if (this.state.isMigratingChildren) {
       console.log('[app] Waiting for migration to complete');
       return null;
     }
@@ -1269,6 +1301,7 @@ function mapDispatchToProps(dispatch) {
 
     handleSetActiveWorkspace: global.setActiveWorkspace,
     handleImportFileToWorkspace: global.importFile,
+    handleImportClipBoardToWorkspace: global.importClipBoard,
     handleImportUriToWorkspace: global.importUri,
     handleCommand: global.newCommand,
     handleExportFile: global.exportWorkspacesToFile,

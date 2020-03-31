@@ -50,7 +50,8 @@ export async function importUri(
     const path = uri.replace(/^(file):\/\//, '');
     rawText = fs.readFileSync(path, 'utf8');
   } else {
-    throw new Error(`Invalid import URI ${uri}`);
+    // Treat everything else as raw text
+    rawText = decodeURIComponent(uri);
   }
 
   const result = await importRaw(getWorkspaceId, rawText);
@@ -179,7 +180,23 @@ export async function importRaw(
       continue;
     }
 
-    const existingDoc = await model.getById(resource._id);
+    // Try adding Content-Type JSON if no Content-Type exists
+    if (
+      model.type === models.request.type &&
+      resource.body &&
+      typeof resource.body.text === 'string' &&
+      Array.isArray(resource.headers) &&
+      !resource.headers.find(h => h.name.toLowerCase() === 'content-type')
+    ) {
+      try {
+        JSON.parse(resource.body.text);
+        resource.headers.push({ name: 'Content-Type', value: 'application/json' });
+      } catch (err) {
+        // Not JSON
+      }
+    }
+
+    const existingDoc = await db.get(model.type, resource._id);
     let newDoc: BaseModel;
     if (existingDoc) {
       newDoc = await db.docUpdate(existingDoc, resource);

@@ -7,7 +7,6 @@ import Button from '../base/button';
 import ModalBody from '../base/modal-body';
 import ModalHeader from '../base/modal-header';
 import SettingsShortcuts from '../settings/shortcuts';
-import About from '../settings/about';
 import General from '../settings/general';
 import ImportExport from '../settings/import-export';
 import Account from '../settings/account';
@@ -22,6 +21,8 @@ import * as session from '../../../account/session';
 
 export const TAB_INDEX_EXPORT = 1;
 export const TAB_INDEX_SHORTCUTS = 3;
+export const TAB_INDEX_THEMES = 2;
+export const TAB_INDEX_PLUGINS = 5;
 
 @autobind
 class SettingsModal extends PureComponent {
@@ -50,6 +51,11 @@ class SettingsModal extends PureComponent {
 
   _handleImportFile() {
     this.props.handleImportFile();
+    this.modal.hide();
+  }
+
+  _handleImportClipBoard() {
+    this.props.handleImportClipBoard();
     this.modal.hide();
   }
 
@@ -117,9 +123,6 @@ class SettingsModal extends PureComponent {
               <Tab tabIndex="-1">
                 <Button value="Plugins">Plugins</Button>
               </Tab>
-              <Tab tabIndex="-1">
-                <Button value="About">About</Button>
-              </Tab>
             </TabList>
             <TabPanel className="react-tabs__tab-panel pad scrollable">
               <General
@@ -134,6 +137,7 @@ class SettingsModal extends PureComponent {
                 handleExportAll={this._handleExportAllToFile}
                 handleShowExportRequestsModal={this._handleShowExportRequestsModal}
                 handleImportFile={this._handleImportFile}
+                handleImportClipBoard={this._handleImportClipBoard}
                 handleImportUri={this._handleImportUri}
               />
             </TabPanel>
@@ -150,10 +154,7 @@ class SettingsModal extends PureComponent {
               <Account />
             </TabPanel>
             <TabPanel className="react-tabs__tab-panel pad scrollable">
-              <Plugins />
-            </TabPanel>
-            <TabPanel className="react-tabs__tab-panel pad scrollable">
-              <About />
+              <Plugins settings={settings} updateSetting={this._handleUpdateSetting} />
             </TabPanel>
           </Tabs>
         </ModalBody>
